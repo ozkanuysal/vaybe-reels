@@ -7,9 +7,9 @@ on:
         description: "Yayın saati (Türkiye, SS:DD). Boş bırakılırsa video hazır olunca hemen yayınlanır."
         required: false
         default: ""
-  # Deneme başarılı olunca açılacak: her gün 18:40 TR (15:40 UTC) başlar, 19:00'da yayınlar.
+  # Deneme başarılı olunca açılacak: her gün 18:20 TR (15:20 UTC) başlar, 19:00'da yayınlar.
   # schedule:
-  #   - cron: "40 15 * * *"
+  #   - cron: "20 15 * * *"
 
 permissions:
   contents: write
@@ -21,9 +21,21 @@ concurrency:
 jobs:
   paylas:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - name: Zamanlayıcıyı canlı tut (GitHub 60 gün işlemsiz depoda zamanlayıcıyı kapatır)
+        if: github.event_name == 'schedule'
+        run: |
+          son=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - son )) -gt $(( 45 * 86400 )) ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            date -u > .canli-tut
+            git add .canli-tut
+            git commit -m "Zamanlayıcıyı canlı tut"
+            git push
+          fi
       - name: ffmpeg kur
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Paylaş
