@@ -121,7 +121,17 @@ def main():
     hesap = json_istek("GET", IG_USER, {"fields": "username,media_count"})
     log(f"Hesap: @{hesap['username']} (gönderi: {hesap['media_count']})")
 
-    ekler = [a["name"] for a in json.loads(gh("release", "view", KUYRUK, "--json", "assets").stdout)["assets"]]
+    # Zamanlı çalışmada günde tek paylaşım: GitHub zamanlayıcısı gecikebildiği/atlayabildiği için
+    # akşam birden fazla tetikleyici var; bugün zaten paylaşım yapıldıysa sonrakiler bir şey yapmaz.
+    if os.environ.get("ZAMANLI") == "1":
+        son = json_istek("GET", f"{IG_USER}/media", {"fields": "timestamp", "limit": "1"}).get("data", [])
+        if son:
+            ts = datetime.datetime.strptime(son[0]["timestamp"], "%Y-%m-%dT%H:%M:%S%z").astimezone(TR)
+            if ts.date() == datetime.datetime.now(TR).date():
+                log(f"Bugün zaten paylaşım yapılmış ({ts:%H:%M}), bu tetikleme atlanıyor.")
+                return
+
+    ekler =[a["name"] for a in json.loads(gh("release", "view", KUYRUK, "--json", "assets").stdout)["assets"]]
     videolar = sorted(n for n in ekler if n.lower().endswith(".mp4"))
     if not videolar:
         log("Kuyrukta video yok, çıkılıyor.")
