@@ -8,8 +8,13 @@ on:
         required: false
         default: ""
   schedule:
-    # TEST: 10:32 TR (07:32 UTC) başlar, 10:36'da yayınlar. Test sonrası "20 15 * * *" (18:20 TR) ve 19:00 yapılacak.
-    - cron: "32 7 * * *"
+    # TEST: 10:48 / 10:53 / 10:58 TR tetikler, 10:55'te yayınlar.
+    # Gerçek: "0 15 * * *", "20 15 * * *", "40 15 * * *" (18:00/18:20/18:40 TR) ve 19:00.
+    # GitHub zamanlayıcısı gecikebildiği/atlayabildiği için birden fazla tetikleyici var;
+    # paylas.py aynı gün ikinci kez paylaşmaz.
+    - cron: "48 7 * * *"
+    - cron: "53 7 * * *"
+    - cron: "58 7 * * *"
 
 permissions:
   contents: write
@@ -21,7 +26,7 @@ concurrency:
 jobs:
   paylas:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
       - name: Zamanlayıcıyı canlı tut (GitHub 60 gün işlemsiz depoda zamanlayıcıyı kapatır)
@@ -44,4 +49,5 @@ jobs:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          YAYIN_SAATI: ${{ github.event_name == 'schedule' && '10:36' || inputs.yayin_saati }}
+          ZAMANLI: ${{ github.event_name == 'schedule' && '1' || '' }}
+          YAYIN_SAATI: ${{ github.event_name == 'schedule' && '10:55' || inputs.yayin_saati }}
