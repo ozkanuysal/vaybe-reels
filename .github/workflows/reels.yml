@@ -10,6 +10,7 @@ on:
   schedule:
     # Her gün 19:00 TR yayını. GitHub zamanlayıcısı dakikalarca/saatlerce gecikebildiği ya da
     # atlayabildiği için 17:07 / 17:37 / 18:07 / 18:37 TR (UTC+3) dört tetikleyici var.
+    # Ayrıca cron-job.org her gün 18:30 TR'de workflow_dispatch (yayin_saati=19:00) ile tetikler.
     # İlk çalışan videoyu hazırlar ve 19:00'ı bekler; paylas.py aynı gün ikinci kez paylaşmaz.
     - cron: "7 14 * * *"
     - cron: "37 14 * * *"
@@ -49,5 +50,6 @@ jobs:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          ZAMANLI: ${{ github.event_name == 'schedule' && '1' || '' }}
+          # Zamanlı tetik (GitHub cron ya da cron-job.org, saat verilmiş) aynı gün ikinci kez paylaşmaz.
+          ZAMANLI: ${{ (github.event_name == 'schedule' || inputs.yayin_saati != '') && '1' || '' }}
           YAYIN_SAATI: ${{ github.event_name == 'schedule' && '19:00' || inputs.yayin_saati }}
