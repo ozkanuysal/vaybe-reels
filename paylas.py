@@ -139,11 +139,26 @@ def main():
     else:
         log(f"UYARI: {txt} yok, açıklamasız paylaşılıyor.")
 
-    # 1) Instagram formatına çevir
+    # 1) Süre kontrolü (Reels: 3 sn - 15 dk) ve Instagram formatına çevir
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                        "-of", "default=nw=1:nk=1", str(IS / video)], capture_output=True, text=True)
+    try:
+        sure = float(r.stdout.strip())
+    except ValueError:
+        raise RuntimeError(f"{video} okunamadı (bozuk ya da video değil): {r.stderr.strip()}")
+    log(f"Kaynak süre: {sure:.1f} sn")
+    if sure > 900:
+        raise RuntimeError(f"{video} {sure:.0f} sn; Reels en fazla 15 dk olabilir.")
+    giris = ["-i", str(IS / video)]
+    sinir = []
+    if sure < 3:
+        log("UYARI: Reels en az 3 sn olmalı; video döngüyle 4 sn'ye uzatılıyor.")
+        giris = ["-stream_loop", "-1", "-i", str(IS / video)]
+        sinir = ["-t", "4"]
     ad = f"ig-{int(time.time())}.mp4"
     cikti = IS / ad
     subprocess.run([
-        "ffmpeg", "-y", "-loglevel", "error", "-i", str(IS / video),
+        "ffmpeg", "-y", "-loglevel", "error", *giris, *sinir,
         "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
         "-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-crf", "18", "-maxrate", "20M", "-bufsize", "40M",
         "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", str(cikti),
