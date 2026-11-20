@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       islem:
-        description: "cikar = konuşmayı metne çevir (Whisper) | gom = altyazıyı videoya göm | kuyruga = bitmiş videoyu paylaşım kuyruğuna ekle"
+        description: "cikar = konuşmayı metne çevir (Whisper) | goster = altyazıları loga yaz | gom = altyazıyı videoya göm | kuyruga = bitmiş videoyu paylaşım kuyruğuna ekle"
         required: true
         type: choice
-        options: [cikar, gom, kuyruga]
+        options: [cikar, goster, gom, kuyruga]
 
 permissions:
   contents: write
