@@ -1,0 +1,35 @@
+name: Reels paylas
+
+on:
+  workflow_dispatch:
+    inputs:
+      yayin_saati:
+        description: "Yayın saati (Türkiye, SS:DD). Boş bırakılırsa video hazır olunca hemen yayınlanır."
+        required: false
+        default: ""
+  # Deneme başarılı olunca açılacak: her gün 18:40 TR (15:40 UTC) başlar, 19:00'da yayınlar.
+  # schedule:
+  #   - cron: "40 15 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reels
+  cancel-in-progress: false
+
+jobs:
+  paylas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: ffmpeg kur
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Paylaş
+        run: python3 paylas.py
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          YAYIN_SAATI: ${{ github.event_name == 'schedule' && '19:00' || inputs.yayin_saati }}
