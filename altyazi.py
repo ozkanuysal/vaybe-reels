@@ -25,18 +25,18 @@ ASS_BASLIK = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
-WrapStyle: 2
+WrapStyle: 0
 ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Vay,Montserrat ExtraBold,88,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,7,3,2,90,90,640,1
+Style: Vay,Montserrat ExtraBold,110,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,3,2,70,70,620,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 EN_FAZLA_KELIME = 3
-EN_FAZLA_KARAKTER = 20
+EN_FAZLA_KARAKTER = 18  # 110 punto yazıda 1080 px genişliğe tek satır sığsın
 DURAKLAMA = 0.35  # bu kadar sessizlikte yeni parça
 
 
@@ -207,8 +207,8 @@ def duzelt(kok, parcalar):
 # ---------- 2) gom ----------
 def gom():
     adlar = ekler(HAM)
-    isler = [v for v in ham_videolar(adlar)
-             if v[:-4] + ".srt" in adlar and v[:-4] + "-altyazili.mp4" not in adlar]
+    # Altyazısı olan her ham video yeniden üretilir (stil/düzeltme değişince eskisinin üzerine yazılır).
+    isler = [v for v in ham_videolar(adlar) if v[:-4] + ".srt" in adlar]
     if not isler:
         log("Altyazı gömülecek video yok (önce 'cikar' çalıştırılmalı).")
         return
