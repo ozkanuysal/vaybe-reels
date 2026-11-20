@@ -112,8 +112,15 @@ def cikar():
         log(f"\n=== {video}")
         yol = indir(HAM, video)
         wav = IS / (video[:-4] + ".wav")
-        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(yol), "-vn", "-ac", "1", "-ar", "16000", str(wav)], check=True)
-        segmentler, _ = model.transcribe(str(wav), language="tr", word_timestamps=True, vad_filter=True, beam_size=5)
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(yol), "-vn", "-ac", "1", "-ar", "16000",
+                        "-c:a", "pcm_s16le", str(wav)], check=True)
+        # Sesi kendimiz okuyup diziyi veriyoruz: faster-whisper'ın PyAV ile dosya açması bazı sürümlerde bozuk
+        # ("open() got an unexpected keyword argument 'metadata_errors'", 2026-11-20).
+        import wave
+        import numpy as np
+        with wave.open(str(wav)) as f:
+            ses = np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(np.float32) / 32768.0
+        segmentler, _ = model.transcribe(ses, language="tr", word_timestamps=True, vad_filter=True, beam_size=5)
         kelimeler = [w for s in segmentler for w in (s.words or []) if w.word.strip()]
 
         parcalar, simdiki = [], []
