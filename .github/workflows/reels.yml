@@ -7,9 +7,9 @@ on:
         description: "Yayın saati (Türkiye, SS:DD). Boş bırakılırsa video hazır olunca hemen yayınlanır."
         required: false
         default: ""
-  # Deneme başarılı olunca açılacak: her gün 18:20 TR (15:20 UTC) başlar, 19:00'da yayınlar.
-  # schedule:
-  #   - cron: "20 15 * * *"
+  schedule:
+    # TEST: 10:32 TR (07:32 UTC) başlar, 10:36'da yayınlar. Test sonrası "20 15 * * *" (18:20 TR) ve 19:00 yapılacak.
+    - cron: "32 7 * * *"
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Zamanlayıcıyı canlı tut (GitHub 60 gün işlemsiz depoda zamanlayıcıyı kapatır)
         if: github.event_name == 'schedule'
         run: |
@@ -44,4 +44,4 @@ jobs:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          YAYIN_SAATI: ${{ github.event_name == 'schedule' && '19:00' || inputs.yayin_saati }}
+          YAYIN_SAATI: ${{ github.event_name == 'schedule' && '10:36' || inputs.yayin_saati }}
