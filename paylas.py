@@ -91,28 +91,32 @@ def main():
     boyut = cikti.stat().st_size
     log(f"Çevrildi: {boyut / 1e6:.1f} MB")
 
-    kont = json_istek("POST", f"{IG_USER}/media", {
-        "media_type": "REELS", "upload_type": "resumable", "caption": aciklama, "share_to_feed": "true",
-    })
-    kid = kont["id"]
-    log(f"Konteyner: {kid}")
-
-    kod, govde = istek("POST", kont["uri"], data=cikti.read_bytes(), headers={
-        "Authorization": f"OAuth {TOKEN}", "offset": "0", "file_size": str(boyut),
-        "Content-Type": "application/octet-stream",
-    })
-    # Not: bu yanıt dosya alındığı halde "ProcessingFailedError" olabiliyor; karar durum kontrolüyle verilir.
-    log(f"Yükleme yanıtı ({kod}): {govde}")
-
-    for _ in range(180):  # en fazla 30 dk
-        time.sleep(10)
-        d = json_istek("GET", kid, {"fields": "status_code,status"})
+    # Yükleme bazen "ProcessingFailedError" verip konteyneri sonsuza kadar IN_PROGRESS bırakıyor,
+    # bazen aynı yanıta rağmen 1-2 dk'da FINISHED oluyor (2026-11-19/20 gözlemi). Bu yüzden:
+    # her denemede 6 dk bekle, olmazsa yeni konteyner aç ve baştan yükle; en fazla 4 deneme.
+    veri = cikti.read_bytes()
+    kid = None
+    for deneme in range(1, 5):
+        kont = json_istek("POST", f"{IG_USER}/media", {
+            "media_type": "REELS", "upload_type": "resumable", "caption": aciklama, "share_to_feed": "true",
+        })
+        log(f"Deneme {deneme}: konteyner {kont['id']}")
+        kod, govde = istek("POST", kont["uri"], data=veri, headers={
+            "Authorization": f"OAuth {TOKEN}", "offset": "0", "file_size": str(boyut),
+            "Content-Type": "application/octet-stream",
+        })
+        log(f"Deneme {deneme}: yükleme yanıtı ({kod}): {govde}")
+        for _ in range(36):  # 6 dk
+            time.sleep(10)
+            d = json_istek("GET", kont["id"], {"fields": "status_code,status"})
+            if d.get("status_code") in ("FINISHED", "ERROR", "EXPIRED"):
+                break
+        log(f"Deneme {deneme}: durum {d.get('status_code')} - {d.get('status')}")
         if d.get("status_code") == "FINISHED":
+            kid = kont["id"]
             break
-        if d.get("status_code") in ("ERROR", "EXPIRED"):
-            raise RuntimeError(f"İşleme hatası: {d}")
-    else:
-        raise RuntimeError(f"30 dakikada işlenmedi, konteyner {kid}")
+    if not kid:
+        raise RuntimeError("4 denemede de video işlenmedi.")
     log("Video işlendi, yayına hazır.")
 
     if YAYIN_SAATI:
