@@ -121,7 +121,23 @@ def cikar():
         with wave.open(str(wav)) as f:
             ses = np.frombuffer(f.readframes(f.getnframes()), dtype=np.int16).astype(np.float32) / 32768.0
         segmentler, _ = model.transcribe(ses, language="tr", word_timestamps=True, vad_filter=True, beam_size=5)
-        kelimeler = [w for s in segmentler for w in (s.words or []) if w.word.strip()]
+        # Whisper Türkçe ekleri ayrı kelime veriyor ("Rize 'ye"); kesme işaretiyle başlayanları öncekine yapıştır.
+        from collections import namedtuple
+        Kelime = namedtuple("Kelime", "word start end")
+        # Whisper'ın sessizlik/müzik üstüne uydurduğu bilinen kapanış cümlelerini at.
+        uydurma = ("izlediğiniz için teşekkür", "izlediğiniz için teşekkürler", "abone olmayı unutmayın",
+                   "altyazı m.k", "bir sonraki videoda görüşmek")
+        segmentler = [s for s in segmentler
+                      if not any(u in s.text.lower().replace("i̇", "i") for u in uydurma)
+                      or log(f"Uydurma cümle atıldı: {s.text.strip()}")]
+        kelimeler = []
+        for w in (w for s in segmentler for w in (s.words or []) if w.word.strip()):
+            yazi = w.word.strip()
+            if kelimeler and yazi[:1] in "'’":
+                o = kelimeler[-1]
+                kelimeler[-1] = Kelime(o.word.strip() + yazi.replace("’", "'"), o.start, w.end)
+            else:
+                kelimeler.append(Kelime(yazi, w.start, w.end))
 
         parcalar, simdiki = [], []
         for w in kelimeler:
@@ -182,6 +198,14 @@ def gom():
         log(f"{cikti.name} yüklendi ({cikti.stat().st_size / 1e6:.1f} MB, {len(olaylar)} altyazı parçası).")
 
 
+# ---------- goster ----------
+def goster():
+    """"ham"daki bütün .srt dosyalarını loga yazar (kontrol/düzeltme için)."""
+    for srt in sorted(n for n in ekler(HAM) if n.endswith(".srt")):
+        log(f"\n######## {srt}")
+        log(indir(HAM, srt).read_text(encoding="utf-8-sig"))
+
+
 # ---------- 3) kuyruga ----------
 def kuyruga():
     adlar = ekler(HAM)
@@ -209,4 +233,4 @@ if __name__ == "__main__":
     if gh("release", "view", HAM, kontrol=False).returncode != 0:
         gh("release", "create", HAM, "--title", "Ham videolar (altyazı hattı)",
            "--notes", "Altyazı eklenecek videolar. Bkz. altyazi.py")
-    {"cikar": cikar, "gom": gom, "kuyruga": kuyruga}[islem]()
+    {"cikar": cikar, "goster": goster, "gom": gom, "kuyruga": kuyruga}[islem]()
