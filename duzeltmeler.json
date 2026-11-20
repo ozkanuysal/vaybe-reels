@@ -1,0 +1,18 @@
+{
+  "cay": {
+    "degistir": [
+      ["Orsa yüzyıl önce", "Bundan yüzyıl önce"],
+      ["Raporu rafa", "Rapor rafa"],
+      ["kalkıyor.", "kaldırılıyor."],
+      ["hala", "hâlâ"]
+    ]
+  },
+  "halic": {
+    "sil": ["İzlediğiniz için", "teşekkür ederim."],
+    "degistir": [["hala", "hâlâ"]]
+  },
+  "kar": {
+    "degistir": [["hala", "hâlâ"]]
+  },
+  "kedi": {}
+}

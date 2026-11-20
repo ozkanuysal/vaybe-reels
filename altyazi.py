@@ -168,6 +168,42 @@ def cikar():
         log(" ".join(x.word.strip() for x in kelimeler))
 
 
+# ---------- düzeltmeler ----------
+def duzelt(kok, parcalar):
+    """Altyazı parçalarına düzeltme uygular.
+    Genel: kesme işaretiyle başlayan eki önceki parçaya taşır ("Rize" + "'nin dağlarına"), " 'ya" -> "'ya".
+    Videoya özel (duzeltmeler.json): "sil" = tam metni eşleşen parçaları at, "degistir" = [eski, yeni] kelime/ifade değişimi.
+    """
+    ayar = {}
+    dosya = pathlib.Path("duzeltmeler.json")
+    if dosya.exists():
+        ayar = json.loads(dosya.read_text(encoding="utf-8")).get(kok, {})
+    sil = set(ayar.get("sil", []))
+    degistir = ayar.get("degistir", [])
+
+    sonuc = []
+    for a, b, yazi in parcalar:
+        yazi = re.sub(r"(\w) ['’](\w)", r"\1'\2", yazi)
+        if yazi[:1] in "'’" and sonuc:
+            ek, _, kalan = yazi.partition(" ")
+            pa, pb, py = sonuc[-1]
+            sonuc[-1] = (pa, pb, py + ek.replace("’", "'"))
+            yazi = kalan.strip()
+            if not yazi:
+                sonuc[-1] = (pa, b, sonuc[-1][2])
+                continue
+        if yazi in sil:
+            log(f"  silindi: {yazi}")
+            continue
+        for eski, yeni in degistir:
+            yeni_yazi = re.sub(rf"(?<!\w){re.escape(eski)}(?!\w)", yeni, yazi)
+            if yeni_yazi != yazi:
+                log(f"  düzeltildi: {yazi} -> {yeni_yazi}")
+                yazi = yeni_yazi
+        sonuc.append((a, b, yazi))
+    return sonuc
+
+
 # ---------- 2) gom ----------
 def gom():
     adlar = ekler(HAM)
@@ -179,7 +215,7 @@ def gom():
     for video in isler:
         log(f"\n=== {video}")
         yol = indir(HAM, video)
-        parcalar = srt_oku(indir(HAM, video[:-4] + ".srt"))
+        parcalar = duzelt(video[:-4], srt_oku(indir(HAM, video[:-4] + ".srt")))
         olaylar = []
         for a, b, yazi in parcalar:
             yazi = yazi.replace("{", "(").replace("}", ")").replace("\\", "/")
