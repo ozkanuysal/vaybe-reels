@@ -14,5 +14,8 @@
   "kar": {
     "degistir": [["hala", "hâlâ"]]
   },
-  "kedi": {}
+  "kedi": {},
+  "sinek-ayak": {
+    "degistir": [["Bay be!", "Vay be!"]]
+  }
 }
